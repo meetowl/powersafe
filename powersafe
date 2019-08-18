@@ -1,0 +1,160 @@
+#!/bin/bash
+# Turns off machine based on interface link state.
+
+# Which network interface do we check?
+netinterface=""
+
+logfile="/var/log/powersafe.log"
+
+# File to state the shutdown of the machine
+stopfile="/tmp/powersafe.run"
+# We need executable location for conf file-less operation
+shfile="/sbin/powersafe"
+
+logerror(){
+    printf "powersafe: error: %s \n" "$1" 
+    printf "[$(date --rfc-3339=seconds)] error: %s \n" "$1" >> $logfile 
+}
+
+logwarn(){
+	printf "powersafe: warn: %s \n" "$1"
+	printf "[$(date --rfc-3339=seconds)] warn: %s \n" "$1" >> $logfile
+}
+
+loginform(){
+	printf "powersafe: inform: %s \n" "$1"
+	printf "[$(date --rfc-3339=seconds)] inform: %s \n" "$1" >> $logfile
+}
+
+printwall(){
+	printf "%s" "$1" | wall
+}
+
+printhelp(){
+    printf "powersafe 0.0.1\n\n"
+    printf "Usage: powersafe [operation]\n\n"
+    printf "Check signs of powercut and poweroff if true\n\n"
+    printf "Operations:\n"
+    printf "  set-interface [interface]   Set which interface's state is checked\n"
+    printf "  run                         Run the test, same as not providing arguments\n"
+    printf "  stop                        Stop the poweroff that has been scheduled\n\n"
+}	
+
+
+checkinterface(){
+	# Does it exist at all?
+	if [[ -z $1 ]]; then
+		logerror "interface is not set"
+		exit 1
+	fi
+
+	# Does the name actually exist in the system?
+	if ! ip link show "$1" &> /dev/null; then
+		logerror "interface $1 does not exist"
+		exit 1
+	fi
+}
+                                                                                
+setinterface(){
+	checkinterface "$1"
+	
+	if ! sed -i "s/^netinterface=\".*\"$/netinterface=\"$1\"/" $shfile; then
+		logerror "setting interface failed"
+		exit 1
+	fi
+
+}
+
+getlinkstate(){
+    linkstate=$(ip link show $netinterface |
+					sed -E -e 's/^.*state ([A-Z]*).*$/\1/' -e '/^[ \t]/d')
+}
+
+checkstate(){
+    if [[ -a $stopfile ]]; then
+		printwall "Shutdown aborted! powersafe has been manually disabled."
+		loginform "Shutdown aborted! powersafe has been manually disabled."
+		rm $stopfile
+		shutdown -c
+		exit 0
+    fi
+
+    getlinkstate
+    if [[ $linkstate == "UP" ]]; then
+		printwall "Shutdown aborted! Link state is back up!"
+		loginform "Shutdown aborted! Link state is back up!"
+		shutdown -c
+		exit 0
+    fi	
+}
+
+run_failsafe(){
+	
+	# This quits by itself
+    checkstate
+
+    # Looks like the power has been cut
+    printwall "WARNING: System will shutdown due to suspected powercut!
+You can abort this by running \"$shfile stop\"."
+
+    # Sends its own wall message  
+    shutdown --poweroff 
+
+	# Constantly checks state and aborts shutdown if needed
+	declare -i timeout_at
+    timeout_at="$(date +%s) +  55"
+    while [ "$(date +%s)" -lt "$timeout_at" ]
+    do
+		checkstate
+    done
+
+	exit 0
+}
+
+
+# Begin program
+
+if [ $EUID -ne 0 ]; then
+    logerror "not running as root, exiting." 
+    exit 1;
+fi
+
+
+
+## If no arguments given
+if [[ $# -eq 0 ]]; then
+	checkinterface "$netinterface"
+	getlinkstate
+	if [[ "$linkstate" == "DOWN" ]]; then
+		run_failsafe
+	fi
+else 
+    case "$1" in
+		"set-interface")
+			setinterface "$2";
+			;;
+		
+		"run")
+			checkinterface "$netinterface"
+			getlinkstate
+			if [[ "$linkstate" == "DOWN" ]]; then
+				run_failsafe
+			fi
+			;;
+		
+		"stop")
+			touch "$stopfile";
+			;;
+		
+		"help")
+			printhelp;
+			;;
+		
+		*)
+            logerror "unrecognized option, see \"powersafe help\""
+			exit 1
+			;;
+    esac					  
+fi
+
+exit 0

@@ -1,0 +1,10 @@
+[Unit]
+Description=Powercut safe guard
+Wants=powersafe.timer
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/powersafe
+
+[Install]
+RequiredBy=powersafe.timer

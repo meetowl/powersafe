@@ -1,0 +1,11 @@
+[Unit]
+Description=Powercut safe guard
+Wants=powersafe.timer
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/root/powersafe/powersafe.sh
+
+[Install]
+RequiredBy=powersafe.timer

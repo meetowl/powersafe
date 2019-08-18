@@ -1,0 +1,11 @@
+[Unit]
+Description=Powersafe activation timer
+Requires=powersafe.service
+
+[Timer]
+OnUnitInactiveSec=15
+Unit=powersafe.service
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
