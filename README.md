@@ -1,18 +1,21 @@
-[Marketing]
-Do you have a 24/7 homebrew server?
-Are you too cheap to buy a UPS with actual software?
-Do you live in an area where powercuts are a usual occurence?
-Do you hate your stuff getting corrupted?
+<h1> Powersafe server script </h1>
+<h3>Marketing</h3><br>
 
-Then I have quite the simple solution for you. 
-This watches a network interface (that you set during installation) and 
-sends the system to safely shutdown when it is down. This relies on your
-network going down during a powercut, with more features coming when I 
-need them.
+<p>
+Do you have a 24/7 homebrew server?<br>
+Are you too cheap to buy a UPS with actual software?<br>
+Do you live in an area where powercuts are a usual occurence?<br>
+Do you hate your stuff getting corrupted?<br>
+<br>
+Then I have quite the simple solution for you. <br>
+This watches a network interface (that you set during installation) and <br>
+sends the system to safely shutdown when it is down. This relies on your <br>
+network going down during a powercut, with more features coming when I  <br>
+need them.<br>
+</p>
 
-[Installation]
-
-Clone the repository with:
+<h3>Installation</h3><br>
+Clone the repository with: 
 "$ git clone gitlab.com/meetowl/powersafe.git"
 
 cd into the powersafe directory with:
