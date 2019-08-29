@@ -3,6 +3,7 @@ Description=Powersafe activation timer
 Requires=powersafe.service
 
 [Timer]
+OnActiveSec=5
 OnUnitInactiveSec=15
 Unit=powersafe.service
 Persistent=true
